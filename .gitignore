@@ -1,0 +1,12 @@
+# Ignorar arquivos de dados pesados da pasta data
+data/*
+!data/.gitkeep
+
+# Ignorar caches do Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignorar configurações do editor
+.vscode/
+.idea/

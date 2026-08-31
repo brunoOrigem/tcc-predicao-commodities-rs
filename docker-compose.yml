@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  tcc-app:
+    build: .
+    container_name: tcc_commodities_container
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
