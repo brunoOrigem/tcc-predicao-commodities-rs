@@ -1,6 +1,12 @@
 import glob
 import os
+from pathlib import Path
 import pandas as pd
+
+# Definição dinâmica de caminhos a partir da raiz do projeto (TCC/)
+BASE_DIR = Path(__file__).resolve().parent.parent
+RAW_DIR = BASE_DIR / 'data' / 'raw'
+INTERIM_DIR = BASE_DIR / 'data' / 'interim'
 
 
 def padronizar_colunas(df):
@@ -40,8 +46,9 @@ def padronizar_colunas(df):
 
 
 def processar_e_consolidar_cidade(nome_pasta_cidade):
-    caminho = os.path.join('data', nome_pasta_cidade, '*')
-    todos_arquivos = glob.glob(caminho)
+    # Busca os arquivos dentro de data/raw/<nome_pasta_cidade>/
+    caminho_praça = RAW_DIR / nome_pasta_cidade / '*'
+    todos_arquivos = glob.glob(str(caminho_praça))
     arquivos = [
         f for f in todos_arquivos if f.lower().endswith(('.csv', '.csv'))
     ]
@@ -158,16 +165,17 @@ def gerar_dataset_regional(lista_pracas, nome_arquivo_saida):
 
     if dfs:
         df_regional = pd.concat(dfs, ignore_index=True)
-        os.makedirs('data/processed', exist_ok=True)
-        caminho_final = os.path.join('data', 'processed', nome_arquivo_saida)
+        INTERIM_DIR.mkdir(parents=True, exist_ok=True)
+        caminho_final = INTERIM_DIR / nome_arquivo_saida
         df_regional.to_csv(caminho_final, index=False)
         print(f'\n Dataset regional salvo em: {caminho_final}\n')
 
 
-print('=== Processando Região de Soja e Trigo ===')
-gerar_dataset_regional(
-    pracas_soja_trigo, 'dados_climaticos_soja_trigo_diarios.csv'
-)
+if __name__ == '__main__':
+    print('=== Processando Região de Soja e Trigo ===')
+    gerar_dataset_regional(
+        pracas_soja_trigo, 'dados_climaticos_soja_trigo_diarios.csv'
+    )
 
-print('=== Processando Região do Arroz ===')
-gerar_dataset_regional(pracas_arroz, 'dados_climaticos_arroz_diarios.csv')
+    print('=== Processando Região do Arroz ===')
+    gerar_dataset_regional(pracas_arroz, 'dados_climaticos_arroz_diarios.csv')

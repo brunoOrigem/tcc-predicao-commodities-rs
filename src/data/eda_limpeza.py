@@ -1,12 +1,24 @@
 import os
+from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+# Definição dinâmica dos caminhos (Raiz do projeto: /app)
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+INTERIM_DIR = BASE_DIR / 'data' / 'interim'
+PROCESSED_DIR = BASE_DIR / 'data' / 'processed'
 
-def tratar_e_limpar_dataset(caminho_csv, nome_saida):
-    print(f'=== Processando {caminho_csv} ===')
-    df = pd.read_csv(caminho_csv)
+
+def tratar_e_limpar_dataset(caminho_csv_entrada, nome_saida):
+    print(f'=== Processando {caminho_csv_entrada} ===')
+
+    if not os.path.exists(caminho_csv_entrada):
+        raise FileNotFoundError(
+            f'Arquivo de entrada não encontrado: {caminho_csv_entrada}'
+        )
+
+    df = pd.read_csv(caminho_csv_entrada)
     df['data'] = pd.to_datetime(df['data'])
 
     dfs_limpos = []
@@ -42,25 +54,31 @@ def tratar_e_limpar_dataset(caminho_csv, nome_saida):
                     method='linear', limit_direction='both'
                 )
 
-        dfs_limpos.append(group_reindexed.reset_index().rename(columns={'index': 'data'}))
+        dfs_limpos.append(
+            group_reindexed.reset_index().rename(columns={'index': 'data'})
+        )
 
     df_final = pd.concat(dfs_limpos, ignore_index=True)
 
-    # Exporta o dataset totalmente sem NaNs
-    caminho_final = os.path.join('data', 'processed', nome_saida)
+    # Garante que a pasta data/processed exista antes de salvar
+    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+
+    caminho_final = PROCESSED_DIR / nome_saida
     df_final.to_csv(caminho_final, index=False)
+
     print(f' Dataset limpo e contínuo salvo em: {caminho_final}')
     print(
         f' Total de linhas: {len(df_final)} | Nulos restantes: {df_final.isna().sum().sum()}\n'
     )
 
 
-# Execução para as duas regiões
-tratar_e_limpar_dataset(
-    'data/processed/dados_climaticos_arroz_diarios.csv',
-    'dados_climaticos_arroz_limpos.csv',
-)
-tratar_e_limpar_dataset(
-    'data/processed/dados_climaticos_soja_trigo_diarios.csv',
-    'dados_climaticos_soja_trigo_limpos.csv',
-)
+if __name__ == '__main__':
+    # Leitura dos arquivos consolidados em data/interim/
+    tratar_e_limpar_dataset(
+        INTERIM_DIR / 'dados_climaticos_arroz_diarios.csv',
+        'dados_climaticos_arroz_limpos.csv',
+    )
+    tratar_e_limpar_dataset(
+        INTERIM_DIR / 'dados_climaticos_soja_trigo_diarios.csv',
+        'dados_climaticos_soja_trigo_limpos.csv',
+    )
