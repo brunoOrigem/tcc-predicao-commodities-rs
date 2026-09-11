@@ -1,17 +1,15 @@
 import os
 from pathlib import Path
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 
-# Definição dinâmica dos caminhos (Raiz do projeto: /app)
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+# Subindo de /app/src/data/ até a raiz /app (parents[2])
+BASE_DIR = Path(__file__).resolve().parents[2]
 INTERIM_DIR = BASE_DIR / 'data' / 'interim'
 PROCESSED_DIR = BASE_DIR / 'data' / 'processed'
 
 
 def tratar_e_limpar_dataset(caminho_csv_entrada, nome_saida):
-    print(f'=== Processando {caminho_csv_entrada} ===')
+    print(f'=== Processando {caminho_csv_entrada.name} ===')
 
     if not os.path.exists(caminho_csv_entrada):
         raise FileNotFoundError(
@@ -26,7 +24,7 @@ def tratar_e_limpar_dataset(caminho_csv_entrada, nome_saida):
     for praca, group in df.groupby('praca'):
         group = group.sort_values('data').set_index('data')
 
-        # 1. Reindexação de Datas (Garante continuidade dia a dia sem saltos)
+        # 1. Reindexação de Datas (Garante continuidade temporal)
         min_date = group.index.min()
         max_date = group.index.max()
         calendario_completo = pd.date_range(
@@ -36,12 +34,12 @@ def tratar_e_limpar_dataset(caminho_csv_entrada, nome_saida):
         group_reindexed = group.reindex(calendario_completo)
         group_reindexed['praca'] = praca
 
-        # 2. Trata a precipitação (dias faltantes no calendário assumem 0 mm)
+        # 2. Tratamento da precipitação (dias ausentes assumem 0 mm)
         group_reindexed['precipitacao_mm'] = group_reindexed[
             'precipitacao_mm'
         ].fillna(0)
 
-        # 3. Interpolação Linear para variáveis contínuas (Temperatura e Umidade)
+        # 3. Interpolação linear para variáveis contínuas
         cols_continuas = [
             'temp_ar_c',
             'temp_max_c',
@@ -60,7 +58,7 @@ def tratar_e_limpar_dataset(caminho_csv_entrada, nome_saida):
 
     df_final = pd.concat(dfs_limpos, ignore_index=True)
 
-    # Garante que a pasta data/processed exista antes de salvar
+    # Cria a pasta data/processed/ se não existir
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
     caminho_final = PROCESSED_DIR / nome_saida
@@ -73,7 +71,6 @@ def tratar_e_limpar_dataset(caminho_csv_entrada, nome_saida):
 
 
 if __name__ == '__main__':
-    # Leitura dos arquivos consolidados em data/interim/
     tratar_e_limpar_dataset(
         INTERIM_DIR / 'dados_climaticos_arroz_diarios.csv',
         'dados_climaticos_arroz_limpos.csv',

@@ -1,11 +1,10 @@
-import glob
 import os
 from pathlib import Path
 import pandas as pd
 
 # Definição dinâmica de caminhos a partir da raiz do projeto (TCC/)
 BASE_DIR = Path(__file__).resolve().parent.parent
-RAW_DIR = BASE_DIR / 'data' / 'raw'
+RAW_CLIMA_DIR = BASE_DIR / 'data' / 'raw' / 'clima'
 INTERIM_DIR = BASE_DIR / 'data' / 'interim'
 
 
@@ -46,12 +45,14 @@ def padronizar_colunas(df):
 
 
 def processar_e_consolidar_cidade(nome_pasta_cidade):
-    # Busca os arquivos dentro de data/raw/<nome_pasta_cidade>/
-    caminho_praça = RAW_DIR / nome_pasta_cidade / '*'
-    todos_arquivos = glob.glob(str(caminho_praça))
-    arquivos = [
-        f for f in todos_arquivos if f.lower().endswith(('.csv', '.csv'))
-    ]
+    # Busca recursivamente todos os CSVs dentro de data/raw/clima/<nome_pasta_cidade>/
+    pasta_praça = RAW_CLIMA_DIR / nome_pasta_cidade
+    
+    if not pasta_praça.exists():
+        print(f'Diretório não encontrado: {pasta_praça}')
+        return None
+
+    arquivos = list(pasta_praça.rglob('*.csv')) + list(pasta_praça.rglob('*.CSV'))
 
     if not arquivos:
         print(f'Nenhum arquivo CSV encontrado para: {nome_pasta_cidade}')
@@ -92,11 +93,11 @@ def processar_e_consolidar_cidade(nome_pasta_cidade):
                     dfs_anuais.append(df_alt)
                 else:
                     print(
-                        f'   Aviso: Coluna de data não identificada em {os.path.basename(arq)}'
+                        f'   Aviso: Coluna de data não identificada em {arq.name}'
                     )
 
         except Exception as e:
-            print(f'   Erro no arquivo {os.path.basename(arq)}: {e}')
+            print(f'   Erro no arquivo {arq.name}: {e}')
 
     if not dfs_anuais:
         return None
