@@ -11,21 +11,24 @@ def gerar_dataset_final_arroz():
     arq_clima = PROCESSED_DIR / 'dados_climaticos_arroz_limpos.csv'
     arq_preco = PROCESSED_DIR / 'preco_arroz_limpo.csv'
     arq_dolar = PROCESSED_DIR / 'dolar_limpo.csv'
+    arq_ipca = PROCESSED_DIR / 'ipca_limpo.csv'
 
-    if not arq_clima.exists() or not arq_preco.exists() or not arq_dolar.exists():
+    if not arq_clima.exists() or not arq_preco.exists() or not arq_dolar.exists() or not arq_ipca.exists():
         raise FileNotFoundError(
-            'Verifique se os arquivos dados_climaticos_arroz_limpos.csv, '
-            'preco_arroz_limpo.csv e dolar_limpo.csv estão em data/processed/'
+            'Verifique se todos os arquivos processados (clima, preço, dólar e ipca) '
+            'estão presentes em data/processed/'
         )
 
     print('=== 1. Carregando Datasets Processados ===')
     df_clima = pd.read_csv(arq_clima)
     df_preco = pd.read_csv(arq_preco)
     df_dolar = pd.read_csv(arq_dolar)
+    df_ipca = pd.read_csv(arq_ipca)
 
     df_clima['data'] = pd.to_datetime(df_clima['data'])
     df_preco['data'] = pd.to_datetime(df_preco['data'])
     df_dolar['data'] = pd.to_datetime(df_dolar['data'])
+    df_ipca['data'] = pd.to_datetime(df_ipca['data'])
 
     print('=== 2. Agregando Clima Regional (Média das 3 Praças) ===')
     df_clima_reg = (
@@ -42,12 +45,13 @@ def gerar_dataset_final_arroz():
         .reset_index()
     )
 
-    print('=== 3. Unificando Dados (Preço, Clima e Dólar - Versão 2.0) ===')
+    print('=== 3. Unificando Dados (Preço, Clima, Dólar e IPCA - Versão 2.0) ===')
     df_merged = pd.merge(df_preco, df_clima_reg, on='data', how='inner')
     df_merged = pd.merge(df_merged, df_dolar, on='data', how='left')
+    df_merged = pd.merge(df_merged, df_ipca, on='data', how='left')
     df_merged = df_merged.sort_values('data').reset_index(drop=True)
 
-    print('=== 4. Criando Features Preditivas (v2.0) ===')
+    print('=== 4. Criando Features Preditivas (v2.0 Completa) ===')
 
     # A. Sazonalidade Cíclica
     df_merged['mes'] = df_merged['data'].dt.month
@@ -70,7 +74,7 @@ def gerar_dataset_final_arroz():
             df_merged['preco_brl'].rolling(window=window).std()
         )
 
-    # C. Lags e Janelas Móveis do Dólar (Novas Features v2.0)
+    # C. Lags e Janelas Móveis do Dólar
     for lag in [1, 7, 14]:
         df_merged[f'dolar_lag_{lag}'] = df_merged['dolar_venda'].shift(lag)
 
