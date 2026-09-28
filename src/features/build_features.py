@@ -12,10 +12,11 @@ def gerar_dataset_final_arroz():
     arq_preco = PROCESSED_DIR / 'preco_arroz_limpo.csv'
     arq_dolar = PROCESSED_DIR / 'dolar_limpo.csv'
     arq_ipca = PROCESSED_DIR / 'ipca_limpo.csv'
+    arq_selic = PROCESSED_DIR / 'selic_limpo.csv'
 
-    if not arq_clima.exists() or not arq_preco.exists() or not arq_dolar.exists() or not arq_ipca.exists():
+    if not arq_clima.exists() or not arq_preco.exists() or not arq_dolar.exists() or not arq_ipca.exists() or not arq_selic.exists():
         raise FileNotFoundError(
-            'Verifique se todos os arquivos processados (clima, preço, dólar e ipca) '
+            'Verifique se todos os arquivos processados (clima, preço, dólar, ipca e selic) '
             'estão presentes em data/processed/'
         )
 
@@ -24,11 +25,13 @@ def gerar_dataset_final_arroz():
     df_preco = pd.read_csv(arq_preco)
     df_dolar = pd.read_csv(arq_dolar)
     df_ipca = pd.read_csv(arq_ipca)
+    df_selic = pd.read_csv(arq_selic)
 
     df_clima['data'] = pd.to_datetime(df_clima['data'])
     df_preco['data'] = pd.to_datetime(df_preco['data'])
     df_dolar['data'] = pd.to_datetime(df_dolar['data'])
     df_ipca['data'] = pd.to_datetime(df_ipca['data'])
+    df_selic['data'] = pd.to_datetime(df_selic['data'])
 
     print('=== 2. Agregando Clima Regional (Média das 3 Praças) ===')
     df_clima_reg = (
@@ -45,13 +48,14 @@ def gerar_dataset_final_arroz():
         .reset_index()
     )
 
-    print('=== 3. Unificando Dados (Preço, Clima, Dólar e IPCA - Versão 2.0) ===')
+    print('=== 3. Unificando Dados (Preço, Clima, Dólar, IPCA e Selic - Versão 2.1) ===')
     df_merged = pd.merge(df_preco, df_clima_reg, on='data', how='inner')
     df_merged = pd.merge(df_merged, df_dolar, on='data', how='left')
     df_merged = pd.merge(df_merged, df_ipca, on='data', how='left')
+    df_merged = pd.merge(df_merged, df_selic, on='data', how='left')
     df_merged = df_merged.sort_values('data').reset_index(drop=True)
 
-    print('=== 4. Criando Features Preditivas (v2.0 Completa) ===')
+    print('=== 4. Criando Features Preditivas (v2.1 Completa) ===')
 
     # A. Sazonalidade Cíclica
     df_merged['mes'] = df_merged['data'].dt.month
