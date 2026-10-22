@@ -5,3 +5,9 @@ xgboost
 tensorflow
 matplotlib
 xlrd
+# Séries temporais (SARIMA)
+statsmodels
+scipy
+# Notebooks
+jupyter
+ipykernel
