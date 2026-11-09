@@ -1,5 +1,6 @@
 from pathlib import Path
 import pandas as pd
+import xlrd
 
 # Definição dinâmica de caminhos (Subindo de src/data/ até a raiz TCC/)
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -8,27 +9,30 @@ PROCESSED_DIR = BASE_DIR / 'data' / 'processed'
 
 
 def tratar_e_limpar_precos_trigo(data_inicio='2008-01-01', data_fim='2026-04-20'):
-    caminho_csv = RAW_COMMODITIES_DIR / 'Serie de precos trigo CEPEA.csv'
+    # Indicador do Trigo CEPEA/ESALQ - Rio Grande do Sul (preço médio à vista)
+    caminho_xls = RAW_COMMODITIES_DIR / 'Serie de precos trigo media RS.xls'
 
-    if not caminho_csv.exists():
+    if not caminho_xls.exists():
         raise FileNotFoundError(
-            f'Arquivo do CEPEA não encontrado em: {caminho_csv}'
+            f'Arquivo do CEPEA não encontrado em: {caminho_xls}'
         )
 
-    print(f'=== Processando Cotações da Commodity: {caminho_csv.name} ===')
+    print(f'=== Processando Cotações da Commodity: {caminho_xls.name} ===')
 
-    # Leitura do CSV do CEPEA: pula as 3 linhas de metadados e lê o cabeçalho
-    # (Data; À vista R$; À vista US$). O arquivo traz colunas vazias extras
-    # (';;;;;;;'), então mantemos apenas as 3 primeiras.
-    df = pd.read_csv(
-        caminho_csv,
-        sep=';',
-        skiprows=3,
-        encoding='latin1',
-        decimal=',',
-        usecols=[0, 1, 2],
+    # Abertura da planilha do CEPEA com xlrd (compatível com formato legado .xls)
+    workbook = xlrd.open_workbook(
+        caminho_xls, ignore_workbook_corruption=True
     )
-    df.columns = ['data', 'preco_brl', 'preco_usd']
+    sheet = workbook.sheet_by_index(0)
+
+    # Extrai todas as linhas da planilha
+    rows = [sheet.row_values(i) for i in range(sheet.nrows)]
+
+    # Os dados iniciam na linha index 4 (pulando título, linha vazia, fonte e
+    # cabeçalho das linhas 0-3). Mantém apenas Data, À vista R$ e À vista US$.
+    df = pd.DataFrame(
+        [r[:3] for r in rows[4:]], columns=['data', 'preco_brl', 'preco_usd']
+    )
 
     # Converter e validar coluna de datas
     df['data'] = pd.to_datetime(df['data'], format='%d/%m/%Y', errors='coerce')
