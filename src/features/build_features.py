@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -6,32 +5,49 @@ import pandas as pd
 BASE_DIR = Path(__file__).resolve().parents[2]
 PROCESSED_DIR = BASE_DIR / 'data' / 'processed'
 
+# Configuração de cada commodity: arquivos de entrada (preço e clima) e saída.
+# As variáveis macroeconômicas (dólar, IPCA e Selic) são comuns a todas.
+COMMODITIES = {
+    'arroz': {
+        'arq_preco': 'preco_arroz_limpo.csv',
+        'arq_clima': 'dados_climaticos_arroz_limpos.csv',
+        'arq_saida': 'dataset_final_arroz.csv',
+    },
+    'trigo': {
+        'arq_preco': 'preco_trigo_limpo.csv',
+        'arq_clima': 'dados_climaticos_soja_trigo_limpos.csv',
+        'arq_saida': 'dataset_final_trigo.csv',
+    },
+}
 
-def gerar_dataset_final_arroz():
-    arq_clima = PROCESSED_DIR / 'dados_climaticos_arroz_limpos.csv'
-    arq_preco = PROCESSED_DIR / 'preco_arroz_limpo.csv'
-    arq_dolar = PROCESSED_DIR / 'dolar_limpo.csv'
-    arq_ipca = PROCESSED_DIR / 'ipca_limpo.csv'
-    arq_selic = PROCESSED_DIR / 'selic_limpo.csv'
+ARQS_MACRO = ['dolar_limpo.csv', 'ipca_limpo.csv', 'selic_limpo.csv']
 
-    if not arq_clima.exists() or not arq_preco.exists() or not arq_dolar.exists() or not arq_ipca.exists() or not arq_selic.exists():
+
+def _carregar_csv(nome_arquivo):
+    df = pd.read_csv(PROCESSED_DIR / nome_arquivo)
+    df['data'] = pd.to_datetime(df['data'])
+    return df
+
+
+def gerar_dataset_final(commodity):
+    if commodity not in COMMODITIES:
+        raise ValueError(
+            f'Commodity "{commodity}" não configurada. Opções: {list(COMMODITIES)}'
+        )
+    cfg = COMMODITIES[commodity]
+
+    arquivos = [cfg['arq_preco'], cfg['arq_clima'], *ARQS_MACRO]
+    faltando = [a for a in arquivos if not (PROCESSED_DIR / a).exists()]
+    if faltando:
         raise FileNotFoundError(
-            'Verifique se todos os arquivos processados (clima, preço, dólar, ipca e selic) '
-            'estão presentes em data/processed/'
+            f'Arquivos processados ausentes em data/processed/: {faltando}'
         )
 
+    print(f'##### Commodity: {commodity.upper()} #####')
     print('=== 1. Carregando Datasets Processados ===')
-    df_clima = pd.read_csv(arq_clima)
-    df_preco = pd.read_csv(arq_preco)
-    df_dolar = pd.read_csv(arq_dolar)
-    df_ipca = pd.read_csv(arq_ipca)
-    df_selic = pd.read_csv(arq_selic)
-
-    df_clima['data'] = pd.to_datetime(df_clima['data'])
-    df_preco['data'] = pd.to_datetime(df_preco['data'])
-    df_dolar['data'] = pd.to_datetime(df_dolar['data'])
-    df_ipca['data'] = pd.to_datetime(df_ipca['data'])
-    df_selic['data'] = pd.to_datetime(df_selic['data'])
+    df_preco = _carregar_csv(cfg['arq_preco'])
+    df_clima = _carregar_csv(cfg['arq_clima'])
+    df_dolar, df_ipca, df_selic = (_carregar_csv(a) for a in ARQS_MACRO)
 
     print('=== 2. Agregando Clima Regional (Média das 3 Praças) ===')
     df_clima_reg = (
@@ -66,7 +82,7 @@ def gerar_dataset_final_arroz():
     df_merged['sin_dia_ano'] = np.sin(2 * np.pi * df_merged['dia_ano'] / 365.25)
     df_merged['cos_dia_ano'] = np.cos(2 * np.pi * df_merged['dia_ano'] / 365.25)
 
-    # B. Lags e Janelas Móveis do Preço do Arroz
+    # B. Lags e Janelas Móveis do Preço da Commodity
     for lag in [1, 7, 14, 30]:
         df_merged[f'preco_brl_lag_{lag}'] = df_merged['preco_brl'].shift(lag)
 
@@ -100,7 +116,7 @@ def gerar_dataset_final_arroz():
     df_final[cols_float] = df_final[cols_float].round(4)
 
     # Exportação do dataset final
-    caminho_saida = PROCESSED_DIR / 'dataset_final_arroz.csv'
+    caminho_saida = PROCESSED_DIR / cfg['arq_saida']
     df_final.to_csv(caminho_saida, index=False)
 
     print(f'\n Dataset Final Consolidado salvo em: {caminho_saida}')
@@ -110,6 +126,17 @@ def gerar_dataset_final_arroz():
     )
     print(f' Total de NaNs restantes: {df_final.isna().sum().sum()}\n')
 
+    return df_final
+
+
+def gerar_dataset_final_arroz():
+    return gerar_dataset_final('arroz')
+
+
+def gerar_dataset_final_trigo():
+    return gerar_dataset_final('trigo')
+
 
 if __name__ == '__main__':
-    gerar_dataset_final_arroz()
+    for nome in COMMODITIES:
+        gerar_dataset_final(nome)
