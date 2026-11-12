@@ -1,6 +1,6 @@
 """Pesos temporais da atenção aditiva (Bahdanau) sobre a LSTM do arroz.
 
-Gera models/outputs/arroz_lstm_attention_pesos.png: o peso médio que a camada de
+Gera models/outputs/lstm_atencao_pesos_arroz.png: o peso médio que a camada de
 atenção atribui a cada um dos 30 dias da janela de entrada.
 
 Experimento descartado como modelo de previsão (o modelo oficial é a LSTM com 36
@@ -46,7 +46,7 @@ from tensorflow.keras import layers
 BASE_DIR = Path(__file__).resolve().parents[2]
 ARQ_DADOS = BASE_DIR / "data" / "processed" / "dataset_final_arroz.csv"
 PASTA_SAIDA = BASE_DIR / "models" / "outputs"
-ARQ_FIGURA = PASTA_SAIDA / "arroz_lstm_attention_pesos.png"
+ARQ_FIGURA = PASTA_SAIDA / "lstm_atencao_pesos_arroz.png"
 
 ALVO = "preco_brl"
 FIM_TREINO = "2026-01-31"

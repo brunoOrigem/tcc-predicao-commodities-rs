@@ -1,2 +1,2 @@
 modelo,RMSE,MAE,MAPE
-LSTM,0.2181,0.1825,0.3339
+"LSTM(64) em diferenças, recursiva (30 passos)",0.3435,0.296,0.5395
