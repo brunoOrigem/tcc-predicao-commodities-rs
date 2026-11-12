@@ -4,6 +4,7 @@ scikit-learn
 xgboost
 tensorflow
 matplotlib
+seaborn
 xlrd
 yfinance
 # Séries temporais (SARIMA)
