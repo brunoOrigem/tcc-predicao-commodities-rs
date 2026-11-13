@@ -1,2 +1,2 @@
-modelo,RMSE,MAE,MAPE
-"LSTM(64) em diferenças, recursiva (30 passos)",0.3435,0.296,0.5395
+modelo,RMSE,MAE,MAPE,RMSE_desvio,MAE_desvio,MAPE_desvio,n_sementes
+"LSTM(64) em diferenças, recursiva — média de 10 sementes",1.1565,0.9794,1.7772,0.8478,0.7366,1.3363,10
